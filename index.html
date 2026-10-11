@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shrinkwrap</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -111,9 +113,9 @@ input[type="range"]:disabled { opacity: 0.4; }
 .qval { font-family: var(--font-data); font-size: 13px; min-width: 4.5ch; padding: 2px 6px; border-radius: var(--r-sm); background: var(--sunken); border: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; }
 .hint { margin: 0; font-size: var(--fs-small); line-height: 1.5; color: var(--muted); }
 
-select, input[type="text"] { font: inherit; font-family: var(--font-data); font-size: 13px; color: var(--fg); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); min-height: var(--ctl); padding: 0 10px; width: 100%; min-width: 0; }
-select:hover, input[type="text"]:hover { border-color: var(--line-strong); }
-input[type="text"]:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 1px var(--accent); }
+select, input[type="text"], input[type="number"] { font: inherit; font-family: var(--font-data); font-size: 13px; color: var(--fg); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); min-height: var(--ctl); padding: 0 10px; width: 100%; min-width: 0; }
+select:hover, input[type="text"]:hover, input[type="number"]:hover { border-color: var(--line-strong); }
+input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 1px var(--accent); }
 input[type="text"][aria-invalid="true"] { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
 .check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.45; cursor: pointer; }
 .check input { margin: 2px 0 0; accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
@@ -178,6 +180,42 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
 .peek summary:hover { color: var(--fg); }
 .peek pre { margin: var(--s2) 0 0; max-height: 260px; overflow: auto; padding: var(--s3); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); font-family: var(--font-data); font-size: 12px; line-height: 1.5; tab-size: 4; }
 
+/* PDF page editor: one board of page thumbnails, below the file list */
+.board { display: grid; gap: var(--s3); min-width: 0; }
+.board-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); }
+.board-count { font-family: var(--font-data); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.board-bar .actions button { min-height: 34px; padding: 0 12px; }
+.board-hint { margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.pages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: var(--s3); }
+.pg { position: relative; display: grid; gap: 6px; min-width: 0; padding: var(--s2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: border-color 120ms, background-color 120ms; }
+.pg:hover { border-color: var(--line-strong); }
+.pg.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.pg.dragging { opacity: 0.55; cursor: grabbing; outline: 2px dashed var(--accent); outline-offset: 2px; }
+.pg-frame { position: relative; aspect-ratio: 1; display: grid; place-items: center; background: var(--sunken); border-radius: var(--r-sm); overflow: hidden; }
+/* The sheet is the page preview at its own aspect ratio; gap marks sit on it and turn with it. */
+.pg-sheet { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(17 21 27 / 0.12); transition: transform 160ms; pointer-events: none; }
+.pg-sheet.tall { height: calc(100% - 14px); }
+.pg-sheet.wide { width: calc(100% - 14px); }
+.pg-sheet img { display: block; width: 100%; height: 100%; }
+.pg-gap { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, rgb(169 78 20 / 0.20) 0 4px, rgb(169 78 20 / 0.08) 4px 8px); border-block: 1px dashed rgb(169 78 20 / 0.7); }
+.pg.flash { animation: pg-flash 1.4s ease-out; }
+@keyframes pg-flash { 0%, 40% { box-shadow: 0 0 0 3px var(--warn); border-color: var(--warn); } }
+.gaps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.gaps button { width: 100%; min-height: 34px; display: grid; grid-template-columns: 6ch minmax(0, 1fr) auto; gap: var(--s2); align-items: center; text-align: left; padding: 4px 10px; font-family: var(--font-data); font-size: var(--fs-small); font-weight: 400; font-variant-numeric: tabular-nums; }
+.gaps b { font-weight: 500; white-space: nowrap; }
+.gaps span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gaps em { font-style: normal; color: var(--warn); white-space: nowrap; }
+.pg-ph { font-family: var(--font-data); font-size: var(--fs-small); color: var(--muted); }
+.pg-check { position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.pg-badge { position: absolute; top: 6px; right: 6px; font-family: var(--font-data); font-size: 10.5px; font-weight: 500; letter-spacing: 0.04em; line-height: 1.6; padding: 0 6px; border-radius: 999px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); }
+.pg-badge.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.pg-cap { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-family: var(--font-data); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.pg-cap b { font-weight: 500; }
+.pg-cap span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-act { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.pg-act button { min-height: 30px; padding: 0; font-family: var(--font-data); font-size: 14px; }
+.pg-act svg { width: 15px; height: 15px; display: block; margin: auto; }
+
 .status { margin-bottom: 0; font-size: var(--fs-small); color: var(--muted); }
 .status:empty { margin-top: 0; }
 .status.err { color: var(--warn); }
@@ -198,6 +236,11 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   .summary .actions { width: 100%; }
   .summary .actions button { flex: 1; }
   .part button { min-height: 36px; }
+  .pages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+  .pg-act button { min-height: 36px; }
+  .board-bar .actions { width: 100%; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .board-bar .actions button { grid-column: span 2; min-height: 40px; padding: 0 6px; }
+  .board-bar .actions button:nth-child(n+4) { grid-column: span 3; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -279,12 +322,64 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     <section class="panel" aria-label="PDF settings">
       <fieldset>
         <legend>Action</legend>
-        <div class="seg" role="radiogroup" aria-label="PDF action">
+        <div class="seg quad" role="radiogroup" aria-label="PDF action">
+          <input type="radio" name="pmode" id="pmode-edit" value="edit"><label for="pmode-edit">Edit pages</label>
           <input type="radio" name="pmode" id="pmode-merge" value="merge"><label for="pmode-merge">Merge</label>
           <input type="radio" name="pmode" id="pmode-split" value="split"><label for="pmode-split">Split</label>
           <input type="radio" name="pmode" id="pmode-compress" value="compress" checked><label for="pmode-compress">Compress</label>
         </div>
       </fieldset>
+
+      <div class="group" data-pmode="edit" hidden>
+        <p class="hint">Every page of every PDF in the list, on one board. Drag pages to reorder them, or use the buttons under each page. Everything saves as one PDF; tick pages to save just those.</p>
+
+        <fieldset>
+          <legend>Gaps and blank pages</legend>
+          <p class="hint" id="p-blank-note" aria-live="polite"></p>
+          <button type="button" id="p-blank-rm" hidden></button>
+          <ul class="gaps" id="p-gaps" aria-label="Gaps, in page order" hidden></ul>
+        </fieldset>
+
+        <div class="field">
+          <label class="label" for="p-layout">Spacing</label>
+          <select id="p-layout">
+            <option value="keep" selected>Keep pages as they are</option>
+            <option value="trim">Trim white margins</option>
+            <option value="gaps">Close up big gaps</option>
+          </select>
+          <p class="hint" id="p-layout-hint"></p>
+        </div>
+        <label class="check" id="p-hf-row" hidden><input type="checkbox" id="p-hf" checked> <span>Drop old headers and page numbers, which would otherwise land mid-page</span></label>
+
+        <fieldset>
+          <legend>Page numbers</legend>
+          <label class="check"><input type="checkbox" id="p-num"> <span>Add page numbers</span></label>
+          <div class="group" id="p-num-opts" hidden>
+            <div class="seg" role="radiogroup" aria-label="Number format">
+              <input type="radio" name="pnfmt" id="pnfmt-n" value="n" checked><label for="pnfmt-n">3</label>
+              <input type="radio" name="pnfmt" id="pnfmt-nN" value="nN"><label for="pnfmt-nN">3 / 12</label>
+              <input type="radio" name="pnfmt" id="pnfmt-page" value="page"><label for="pnfmt-page">Page 3 of 12</label>
+            </div>
+            <div class="field">
+              <label class="label" for="p-num-pos">Position</label>
+              <select id="p-num-pos">
+                <option value="bc" selected>Bottom, centered</option>
+                <option value="br">Bottom right</option>
+                <option value="bl">Bottom left</option>
+                <option value="tc">Top, centered</option>
+                <option value="tr">Top right</option>
+                <option value="tl">Top left</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="label" for="p-num-start">Start at</label>
+              <input type="number" id="p-num-start" value="1" min="0" max="99999" step="1" inputmode="numeric">
+            </div>
+            <label class="check"><input type="checkbox" id="p-num-skip"> <span>Skip the first page (a cover)</span></label>
+            <p class="hint">The first numbered page gets the start number. Numbers follow the board order and stay upright on rotated pages.</p>
+          </div>
+        </fieldset>
+      </div>
 
       <div class="group" data-pmode="merge" hidden>
         <p class="hint">Joins every PDF in the list into one file, top to bottom. Use the arrows on each file to change the order.</p>
@@ -346,6 +441,21 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
 
       <p class="status" id="p-status" role="status"></p>
       <ul class="list" id="p-list" data-empty="Your PDFs show up here with their size before and after."></ul>
+
+      <section class="board" id="p-board" aria-label="Pages" hidden>
+        <div class="board-bar">
+          <span class="board-count" id="p-board-count" aria-live="polite"></span>
+          <div class="actions">
+            <button type="button" id="p-sel-all">Select all</button>
+            <button type="button" id="p-sel-rot">Rotate</button>
+            <button type="button" id="p-sel-rm">Remove</button>
+            <button type="button" id="p-sel-save">Save selected</button>
+            <button type="button" id="p-undo">Undo</button>
+          </div>
+        </div>
+        <ol class="pages" id="p-pages"></ol>
+        <p class="board-hint">Tap a page to select it. On a phone, press and hold a page, then drag it.</p>
+      </section>
     </main>
   </div>
 
@@ -464,7 +574,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   </div>
 
   <p class="foot" id="foot-images">Conversion uses your browser's own image encoder, so metadata such as camera data and location is removed from the output. Transparent areas become white when you convert to JPG.</p>
-  <p class="foot" id="foot-pdf" hidden>PDFs are read and rebuilt in this page with pdf-lib. Compressing re-encodes photos inside the PDF as JPEG and never makes a file bigger: if nothing shrinks, the original is kept. Form fields, links and bookmarks may not survive a merge or split.</p>
+  <p class="foot" id="foot-pdf" hidden>PDFs are read and rebuilt in this page with pdf-lib, and page previews are drawn here with pdf.js. Compressing re-encodes photos inside the PDF as JPEG and never makes a file bigger: if nothing shrinks, the original is kept. Form fields, links and bookmarks may not survive a merge or split.</p>
   <p class="foot" id="foot-text" hidden>Files are read and rewritten in this page; nothing leaves your device. Everything is saved as UTF-8. Whole numbers longer than 15 digits, such as some IDs, can lose precision when converted to JSON values, so they are kept as text.</p>
 </div>
 
@@ -796,6 +906,9 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   /* ---------- PDF tool ---------- */
   var pdfTool = (function () {
     var PDF_LIB_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+    /* pdf.js draws the page previews and finds blank pages; it loads only when Edit pages is opened. */
+    var PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    var PDFJS_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     var items = [];
     var nextId = 1;
@@ -804,12 +917,20 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     var L = null, libPromise = null, started = false, failed = false;
     var merged = null;
     var PARTS_SHOWN = 8;
+    /* Edit pages: `board` is the output, in order. Each entry is one source page plus the edits to it. */
+    var board = [], undoStack = [], nextPg = 1, edited = null, dragging = false;
+    var pjsPromise = null, pjsFailed = false, queueRunning = false;
 
     var $ = function (id) { return document.getElementById(id); };
     var listEl = $("p-list"), totalsEl = $("p-totals"), statusEl = $("p-status");
     var saveBtn = $("p-save"), clearBtn = $("p-clear"), dropEl = $("p-drop"), fileEl = $("p-file");
     var qualityEl = $("p-quality"), qvalEl = $("p-qval"), maxEdgeEl = $("p-maxedge"), stripEl = $("p-strip");
     var rangesEl = $("p-ranges"), rangesField = $("p-ranges-field");
+    var boardEl = $("p-board"), pagesEl = $("p-pages"), boardCountEl = $("p-board-count");
+    var selAllBtn = $("p-sel-all"), selRotBtn = $("p-sel-rot"), selRmBtn = $("p-sel-rm"), selSaveBtn = $("p-sel-save"), undoBtn = $("p-undo");
+    var blankNoteEl = $("p-blank-note"), blankRmBtn = $("p-blank-rm"), gapsEl = $("p-gaps");
+    var layoutEl = $("p-layout"), layoutHintEl = $("p-layout-hint"), hfRow = $("p-hf-row"), hfEl = $("p-hf");
+    var numEl = $("p-num"), numOpts = $("p-num-opts"), numPosEl = $("p-num-pos"), numStartEl = $("p-num-start"), numSkipEl = $("p-num-skip");
     var formatBytes = SW.formatBytes, baseName = SW.baseName, el = SW.el;
     var setStatus = SW.statusSetter(statusEl);
 
@@ -818,7 +939,12 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     function settings() {
       return {
         mode: checked("pmode"), split: checked("psplit"), ranges: rangesEl.value,
-        quality: Number(qualityEl.value) / 100, maxEdge: Number(maxEdgeEl.value), strip: stripEl.checked
+        quality: Number(qualityEl.value) / 100, maxEdge: Number(maxEdgeEl.value), strip: stripEl.checked,
+        layout: pjsFailed ? "keep" : layoutEl.value, dropHF: hfEl.checked,
+        numbers: numEl.checked ? {
+          fmt: checked("pnfmt"), pos: numPosEl.value, skip: numSkipEl.checked,
+          start: /^\s*\d+\s*$/.test(numStartEl.value) ? Math.min(99999, Number(numStartEl.value)) : 1
+        } : null
       };
     }
 
@@ -1005,16 +1131,278 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       return { blob: pdfBlob(bytes), kept: false, found: found, changed: changed };
     }
 
+    /* ---- Edit pages: previews and page analysis (pdf.js) ---- */
+    function loadPdfJs() {
+      if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+      if (!pjsPromise) {
+        pjsPromise = new Promise(function (resolve, reject) {
+          var sc = document.createElement("script");
+          sc.src = PDFJS_URL;
+          sc.onload = function () {
+            var lib = window.pdfjsLib;
+            if (!lib) { reject(new Error("missing")); return; }
+            lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+            resolve(lib);
+          };
+          sc.onerror = function () { pjsPromise = null; reject(new Error("load failed")); };
+          document.head.appendChild(sc);
+        });
+      }
+      return pjsPromise;
+    }
+
+    function previewDoc(lib, it) {
+      if (!it.pjs) it.pjs = lib.getDocument({ data: it.bytes.slice(), isEvalSupported: false }).promise;
+      return it.pjs;
+    }
+
+    var THUMB_EDGE = 360;     /* longest side of a preview, in pixels */
+    var EDGE_BAND = 0.09;     /* top and bottom 9% of a page hold headers and footers */
+
+    /* Reads a rendered page: where the ink is, whether the body is empty, and which strips
+       are running headers or footers (used to close up gaps). */
+    function analyze(ctx, w, h, vp, rotate) {
+      var px = ctx.getImageData(0, 0, w, h).data, n = w * h, hist = new Uint32Array(256), lum = new Uint8Array(n), i, x, y;
+      for (i = 0; i < n; i++) { var l = (px[i * 4] * 54 + px[i * 4 + 1] * 183 + px[i * 4 + 2] * 19) >> 8; lum[i] = l; hist[l]++; }
+      var bg = 0, acc = 0;
+      while (bg < 255 && acc + hist[bg] < n / 2) { acc += hist[bg]; bg++; }
+      var rows = new Uint32Array(h), cols = new Uint32Array(w);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (Math.abs(lum[y * w + x] - bg) > 40) { rows[y]++; cols[x]++; }
+      var minRow = Math.max(2, Math.round(w * 0.006)), minCol = Math.max(2, Math.round(h * 0.006));
+      var joinPx = Math.max(1, Math.round(6 * vp.scale)), groups = [], cur = null;
+      for (y = 0; y < h; y++) {
+        if (rows[y] < minRow) continue;
+        if (cur && y - cur.b <= joinPx) cur.b = y + 1; else { cur = { t: y, b: y + 1 }; groups.push(cur); }
+      }
+      groups.forEach(function (g) { g.hf = g.b <= h * EDGE_BAND ? "h" : g.t >= h * (1 - EDGE_BAND) ? "f" : null; });
+      var body = groups.filter(function (g) { return !g.hf; });
+      var info = {
+        blank: !body.length, bbox: null, bands: null, w: w, h: h, ptH: h / vp.scale, white: bg >= 248,
+        body: body.map(function (g) { return { t: g.t / h, b: g.b / h }; })
+      };
+      if (groups.length) {
+        var x0 = 0, x1 = w - 1;
+        while (x0 < w - 1 && cols[x0] < minCol) x0++;
+        while (x1 > x0 && cols[x1] < minCol) x1--;
+        var a = vp.convertToPdfPoint(x0, groups[0].t), b = vp.convertToPdfPoint(x1 + 1, groups[groups.length - 1].b);
+        info.bbox = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]) };
+      }
+      if (rotate === 0 && bg >= 248) {
+        info.bands = groups.map(function (g) {
+          return { top: vp.convertToPdfPoint(0, g.t)[1], bot: vp.convertToPdfPoint(0, g.b)[1], hf: g.hf };
+        });
+      }
+      return info;
+    }
+
+    async function renderEntry(lib, e) {
+      var pdoc = await previewDoc(lib, e.item);
+      var page = await pdoc.getPage(e.index + 1);
+      var base = page.getViewport({ scale: 1 });
+      var vp = page.getViewport({ scale: THUMB_EDGE / Math.max(base.width, base.height) });
+      var c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(vp.width)); c.height = Math.max(1, Math.round(vp.height));
+      var ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      e.info = analyze(ctx, c.width, c.height, vp, page.rotate % 360);
+      e.info.view = page.view.slice();
+      page.cleanup();
+      var blob = await new Promise(function (r) { c.toBlob(r, "image/jpeg", 0.85); });
+      if (blob) e.thumb = URL.createObjectURL(blob);
+    }
+
+    /* Draws previews one page at a time while Edit pages is open. */
+    async function runQueue() {
+      if (queueRunning || pjsFailed || !board.length || settings().mode !== "edit") return;
+      queueRunning = true;
+      var lib;
+      try { lib = await loadPdfJs(); } catch (err) {
+        pjsFailed = true; queueRunning = false;
+        syncModeUi(); render(); schedule(0);
+        return;
+      }
+      var count = 0;
+      while (settings().mode === "edit") {
+        var e = null;
+        for (var i = 0; i < board.length; i++) if (!board[i].info && !board[i].failed) { e = board[i]; break; }
+        if (!e) break;
+        try { await renderEntry(lib, e); } catch (err) { e.failed = true; }
+        if (items.indexOf(e.item) < 0) disposeEntry(e);
+        else updateCard(e);
+        if (++count % 6 === 0) updateBlankNote();
+      }
+      queueRunning = false;
+      updateBlankNote();
+      if (settings().mode === "edit") { renderBar(); schedule(0); }
+    }
+
+    function analysisPending() {
+      return !pjsFailed && board.some(function (e) { return !e.info && !e.failed; });
+    }
+
+    function disposeEntry(e) { if (e.thumb) { URL.revokeObjectURL(e.thumb); e.thumb = null; } }
+
+    /* ---- Edit pages: building the output ---- */
+    var ROT = function (a) { return ((a % 360) + 360) % 360; };
+
+    async function copyEntries(out, entries) {
+      var byItem = new Map(), copied = new Map();
+      entries.forEach(function (e) {
+        if (!byItem.has(e.item)) byItem.set(e.item, []);
+        byItem.get(e.item).push(e.index);
+      });
+      for (var pair of byItem) {
+        var idx = pair[1], pages = await out.copyPages(pair[0].doc, idx), m = new Map();
+        idx.forEach(function (n, k) { m.set(n, pages[k]); });
+        copied.set(pair[0], m);
+        await tick();
+      }
+      return function (e) { return copied.get(e.item).get(e.index); };
+    }
+
+    function addPageAs(out, page, e) {
+      out.addPage(page);
+      if (e.rot) page.setRotation(L.degrees(ROT(page.getRotation().angle + e.rot)));
+    }
+
+    /* Trim: crop each page to its content plus a border (more room when numbers go on). */
+    function trimPage(page, info, pad) {
+      if (!info || !info.bbox || info.blank) return;
+      var cb = page.getCropBox(), b = info.bbox;
+      var x0 = Math.max(cb.x, b.x0 - pad), y0 = Math.max(cb.y, b.y0 - pad);
+      var x1 = Math.min(cb.x + cb.width, b.x1 + pad), y1 = Math.min(cb.y + cb.height, b.y1 + pad);
+      if (x1 - x0 < 36 || y1 - y0 < 36) return;
+      page.setCropBox(x0, y0, x1 - x0, y1 - y0);
+    }
+
+    /* Close up gaps: lift the content of each page off its white space and stack it on fresh
+       pages, so half-empty pages left by page breaks fill up. Each page moves as one block, so
+       text stays sharp, selectable and in order; only the white space around it changes.
+       Pages on coloured paper (scans) and rotated pages are kept whole. */
+    var JOIN_GAP = 12, PAD = 2;
+
+    function blocksOf(e, dropHF) {
+      var bands = e.info.bands.filter(function (b) { return !(dropHF && b.hf); });
+      return bands.length ? [{ top: bands[0].top, bot: bands[bands.length - 1].bot }] : [];
+    }
+
+    async function packEntries(out, entries, s, stale) {
+      var plan = entries.map(function (e) {
+        var ok = e.info && e.info.bands && !e.rot && !!e.item.doc.getPage(e.index).node.Contents();
+        return { e: e, blocks: ok ? blocksOf(e, s.dropHF) : null };
+      });
+      /* One copy per source page, so images and fonts shared between pages are stored once. */
+      var pageOf = await copyEntries(out, entries);
+      if (stale()) return false;
+
+      var margin = 72;
+      plan.forEach(function (p) {
+        if (!p.blocks || !p.blocks.length) return;
+        var v = p.e.info.view;
+        margin = Math.min(margin, v[3] - p.blocks[0].top - PAD, p.blocks[p.blocks.length - 1].bot - v[1] - PAD);
+      });
+      margin = Math.max(24, margin);
+
+      var reqs = new Map();
+      plan.forEach(function (p) {
+        if (!p.blocks) return;
+        var v = p.e.info.view, src = pageOf(p.e);
+        if (!reqs.has(p.e.item)) reqs.set(p.e.item, []);
+        p.blocks.forEach(function (b) {
+          reqs.get(p.e.item).push({ b: b, page: src, box: { left: v[0], right: v[2], bottom: Math.max(v[1], b.bot - PAD), top: Math.min(v[3], b.top + PAD) } });
+        });
+      });
+      for (var pair of reqs) {
+        var list = pair[1];
+        var emb = await out.embedPages(list.map(function (r) { return r.page; }), list.map(function (r) { return r.box; }));
+        list.forEach(function (r, k) { r.b.emb = emb[k]; r.b.box = r.box; });
+        if (stale()) return false;
+        await tick();
+      }
+
+      var cur = null, y = 0, cw = 0, ch = 0;
+      plan.forEach(function (p) {
+        if (!p.blocks) { cur = null; addPageAs(out, pageOf(p.e), p.e); return; }
+        var v = p.e.info.view, w = v[2] - v[0], h = v[3] - v[1];
+        p.blocks.forEach(function (b) {
+          var bh = b.box.top - b.box.bottom;
+          if (cur && (cw !== w || ch !== h)) cur = null;
+          if (bh > h - 2 * margin) {
+            out.addPage([w, h]).drawPage(b.emb, { x: 0, y: b.box.bottom - v[1] });
+            cur = null;
+            return;
+          }
+          var gap = cur ? JOIN_GAP : 0;
+          if (!cur || y - gap - bh < margin) { cur = out.addPage([w, h]); cw = w; ch = h; y = h - margin; gap = 0; }
+          y -= gap + bh;
+          cur.drawPage(b.emb, { x: 0, y: y });
+        });
+      });
+      return true;
+    }
+
+    function numberText(fmt, n, last) {
+      return fmt === "n" ? String(n) : fmt === "nN" ? n + " / " + last : "Page " + n + " of " + last;
+    }
+
+    /* Page numbers sit in the visible frame of each page, upright however the page is rotated. */
+    function addNumbers(out, o, font) {
+      var pages = out.getPages(), skip = o.skip && pages.length > 1 ? 1 : 0;
+      var last = o.start + pages.length - skip - 1, size = 10, ink = L.rgb(0.22, 0.24, 0.28);
+      pages.forEach(function (p, i) {
+        if (i < skip) return;
+        var text = numberText(o.fmt, o.start + i - skip, last), tw = font.widthOfTextAtSize(text, size);
+        var box = p.getCropBox(), r = ROT(p.getRotation().angle);
+        var vw = r % 180 ? box.height : box.width, vh = r % 180 ? box.width : box.height;
+        var edge = Math.min(30, vh * 0.04), side = Math.min(42, vw * 0.07);
+        var vx = o.pos[1] === "l" ? side : o.pos[1] === "r" ? vw - side - tw : (vw - tw) / 2;
+        var vy = o.pos[0] === "b" ? edge : vh - edge - size * 0.72;
+        var x, y;
+        if (r === 90) { x = box.x + box.width - vy; y = box.y + vx; }
+        else if (r === 180) { x = box.x + box.width - vx; y = box.y + box.height - vy; }
+        else if (r === 270) { x = box.x + vy; y = box.y + box.height - vx; }
+        else { x = box.x + vx; y = box.y + vy; }
+        p.drawText(text, { x: x, y: y, size: size, font: font, color: ink, rotate: L.degrees(r) });
+      });
+    }
+
+    /* `stale` says when a newer build has made this one pointless. */
+    async function buildEdited(entries, s, stale) {
+      var out = await L.PDFDocument.create();
+      if (s.layout === "gaps") {
+        if (!(await packEntries(out, entries, s, stale))) return null;
+      } else {
+        var pageOf = await copyEntries(out, entries);
+        if (stale()) return null;
+        entries.forEach(function (e) {
+          var pg = pageOf(e);
+          addPageAs(out, pg, e);
+          if (s.layout === "trim") trimPage(pg, e.info, s.numbers ? 34 : 14);
+        });
+      }
+      if (!out.getPageCount()) throw new Error("Every page was blank, so there is nothing to save.");
+      if (s.numbers) addNumbers(out, s.numbers, await out.embedFont(L.StandardFonts.Helvetica));
+      if (s.layout === "gaps") { await out.flush(); collectGarbage(out.context); }
+      var bytes = await out.save({ useObjectStreams: true });
+      return stale() ? null : { blob: pdfBlob(bytes), pages: out.getPageCount() };
+    }
+
     /* ---- Run the current action over the list ---- */
     async function process() {
       var token = ++runToken, s = settings(), key = settingsKey(s);
       var ready = items.filter(function (it) { return it.doc; });
       if (s.mode === "merge") merged = null;
+      if (s.mode === "edit") edited = null;
       rangesEl.removeAttribute("aria-invalid");
       if (!ready.length || !L) { render(); return; }
       render();
       try {
-        if (s.mode === "merge") {
+        if (s.mode === "edit") {
+          if (!board.length || (s.layout !== "keep" && analysisPending())) return;
+          edited = await buildEdited(board.slice(), s, function () { return token !== runToken; });
+          if (token !== runToken) return;
+        } else if (s.mode === "merge") {
           var out = await L.PDFDocument.create();
           for (var i = 0; i < ready.length; i++) {
             var pages = await out.copyPages(ready[i].doc, ready[i].doc.getPageIndices());
@@ -1063,7 +1451,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         }
         if (failed) { failed = false; setStatus(""); }
       } catch (e) {
-        if (token === runToken) { failed = true; setStatus("Something went wrong: " + (e.message || e), true); }
+        if (token === runToken) { failed = true; setStatus((s.mode === "edit" ? "Could not build the PDF. " : "Something went wrong: ") + (e.message || e), true); }
       } finally {
         if (token === runToken) render();
       }
@@ -1102,6 +1490,9 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         before += it.size; pageTotal += it.pages;
         if (s.mode === "merge") {
           data.textContent = base;
+        } else if (s.mode === "edit") {
+          var kept = board.filter(function (e) { return e.item === it; }).length;
+          data.textContent = base + "  |  " + (kept === it.pages ? "all pages kept" : kept + " kept");
         } else if (it.outErr && it.outKey === settingsKey(s)) {
           data.textContent = it.outErr; data.className = "data err";
         } else if (s.mode === "split" && it.parts && it.outKey === settingsKey(s)) {
@@ -1173,6 +1564,14 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       totalsEl.textContent = "";
       if (!items.length) {
         totalsEl.textContent = started && !L ? "" : "No PDFs yet.";
+      } else if (s.mode === "edit") {
+        var lead2 = items.length + (items.length === 1 ? " file · " : " files · ") + pagesLabel(pageTotal) + " → " + pagesLabel(edited ? edited.pages : board.length) + "  |  " + formatBytes(before);
+        if (edited) {
+          totalsEl.appendChild(document.createTextNode(lead2 + " → " + formatBytes(edited.blob.size) + "  "));
+          totalsEl.appendChild(SW.deltaSpan(before, edited.blob.size, "b"));
+        } else {
+          totalsEl.textContent = lead2 + "  |  " + (!board.length ? "No pages left" : s.layout !== "keep" && analysisPending() ? "Reading pages…" : "Building…");
+        }
       } else if (s.mode === "merge") {
         var lead = items.length + (items.length === 1 ? " file" : " files") + " · " + pagesLabel(merged ? merged.pages : pageTotal) + "  |  " + formatBytes(before);
         if (merged) {
@@ -1194,11 +1593,15 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       if (s.mode === "merge") {
         saveBtn.textContent = "Save merged PDF";
         saveBtn.disabled = !merged || !SW.downloads;
+      } else if (s.mode === "edit") {
+        saveBtn.textContent = "Save PDF";
+        saveBtn.disabled = !edited || !SW.downloads;
       } else {
         saveBtn.textContent = "Save all as ZIP";
         saveBtn.disabled = !done || !SW.downloads || typeof JSZip === "undefined";
       }
       clearBtn.disabled = !items.length;
+      renderBoard();
     }
 
     function move(idx, dir) {
@@ -1212,17 +1615,374 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       if (btns) { var b = btns[dir < 0 ? 0 : 1]; (b && !b.disabled ? b : btns[dir < 0 ? 1 : 0]).focus(); }
     }
 
-    function removeItem(id) {
-      items = items.filter(function (it) { return it.id !== id; });
-      if (settings().mode === "merge") { merged = null; schedule(60); }
+    /* ---- Edit pages: the board ---- */
+    var ICONS = {
+      left: '<path d="M10 3.5L5.5 8l4.5 4.5"/>',
+      right: '<path d="M6 3.5L10.5 8 6 12.5"/>',
+      rotate: '<path d="M12.5 8a4.5 4.5 0 1 1-1.4-3.25"/><path d="M11.5 2v3h-3"/>',
+      remove: '<path d="M4 4l8 8M12 4l-8 8"/>'
+    };
+    function iconButton(icon, label, onClick) {
+      var b = el("button"); b.type = "button";
+      b.setAttribute("aria-label", label); b.title = label;
+      b.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICONS[icon] + "</svg>";
+      b.addEventListener("click", onClick);
+      return b;
+    }
+
+    function shortName(name) {
+      var b = baseName(name);
+      return b.length > 11 ? b.slice(0, 10) + "…" : b;
+    }
+
+    function card(e, i) {
+      var li = el("li", "pg" + (e.sel ? " sel" : ""));
+      li.setAttribute("data-id", e.id);
+      var src = (items.length > 1 ? e.item.name + ", " : "") + "page " + (e.index + 1);
+      var fr = el("div", "pg-frame");
+      if (e.thumb) {
+        var sheet = el("div", "pg-sheet " + (e.info.w >= e.info.h ? "wide" : "tall"));
+        sheet.style.aspectRatio = e.info.w + " / " + e.info.h;
+        if (e.rot) sheet.style.transform = "translate(-50%, -50%) rotate(" + e.rot + "deg)";
+        var im = el("img"); im.alt = ""; im.draggable = false; im.src = e.thumb;
+        sheet.appendChild(im);
+        (gapsByEntry.get(e) || []).forEach(function (g) {
+          var mark = el("span", "pg-gap");
+          mark.style.top = (g.from * 100) + "%"; mark.style.height = ((g.to - g.from) * 100) + "%";
+          sheet.appendChild(mark);
+        });
+        fr.appendChild(sheet);
+      } else {
+        fr.appendChild(el("span", "pg-ph", e.failed || pjsFailed ? "p. " + (e.index + 1) : "Loading…"));
+      }
+      var cb = el("input", "pg-check"); cb.type = "checkbox"; cb.checked = !!e.sel;
+      cb.setAttribute("aria-label", "Select page " + (i + 1) + " (" + src + ")");
+      cb.addEventListener("change", function () { setSel(e, cb.checked); });
+      fr.appendChild(cb);
+      if (e.info && e.info.blank) fr.appendChild(el("span", "pg-badge warn", "Blank"));
+      li.appendChild(fr);
+
+      var cap = el("div", "pg-cap");
+      cap.appendChild(el("b", null, String(i + 1)));
+      var from = el("span", null, items.length > 1 ? shortName(e.item.name) + " p" + (e.index + 1) : "from p" + (e.index + 1));
+      from.title = src;
+      cap.appendChild(from);
+      li.appendChild(cap);
+
+      var act = el("div", "pg-act");
+      var l = iconButton("left", "Move page " + (i + 1) + " earlier", function () { moveEntry(e, -1); });
+      l.disabled = i === 0;
+      var r = iconButton("right", "Move page " + (i + 1) + " later", function () { moveEntry(e, 1); });
+      r.disabled = i === board.length - 1;
+      act.appendChild(l);
+      act.appendChild(iconButton("rotate", "Rotate page " + (i + 1), function () { rotateEntries([e]); }));
+      act.appendChild(iconButton("remove", "Remove page " + (i + 1), function () { removeEntries([e]); }));
+      act.appendChild(r);
+      li.appendChild(act);
+      return li;
+    }
+
+    function renderBar() {
+      var sel = board.filter(function (e) { return e.sel; }).length;
+      var gone = items.reduce(function (a, it) { return a + it.pages; }, 0) - board.length;
+      boardCountEl.textContent = pagesLabel(board.length) + (gone > 0 ? " · " + gone + " removed" : "") + (sel ? " · " + sel + " selected" : "");
+      selAllBtn.textContent = sel && sel === board.length ? "Select none" : "Select all";
+      selAllBtn.disabled = !board.length;
+      selRotBtn.disabled = selRmBtn.disabled = !sel;
+      selSaveBtn.disabled = !sel || !SW.downloads;
+      selSaveBtn.textContent = sel ? "Save " + sel + " selected" : "Save selected";
+      undoBtn.disabled = !undoStack.length;
+    }
+
+    function renderBoard() {
+      var on = settings().mode === "edit" && items.length > 0;
+      boardEl.hidden = !on;
+      if (on && !dragging) renderGaps(!analysisPending() && !pjsFailed);
+      updateBlankNote();
+      if (!on || dragging) return;
+      var keep = document.activeElement && pagesEl.contains(document.activeElement) ? document.activeElement.getAttribute("aria-label") : null;
+      pagesEl.textContent = "";
+      board.forEach(function (e, i) { pagesEl.appendChild(card(e, i)); });
+      renderBar();
+      if (keep) {
+        var again = pagesEl.querySelector('[aria-label="' + keep.replace(/"/g, '\\"') + '"]');
+        if (again && !again.disabled) again.focus();
+      }
+    }
+
+    /* A preview arrived: swap in just that card. */
+    function updateCard(e) {
+      if (dragging || settings().mode !== "edit") return;
+      var i = board.indexOf(e);
+      var old = pagesEl.querySelector('[data-id="' + e.id + '"]');
+      if (i < 0 || !old) return;
+      var focused = old.contains(document.activeElement) ? document.activeElement.getAttribute("aria-label") : null;
+      var fresh = card(e, i);
+      old.replaceWith(fresh);
+      if (focused) { var f = fresh.querySelector('[aria-label="' + focused + '"]'); if (f) f.focus(); }
+    }
+
+    /* Gap finder. A page break shows up as white space between a page's last line and the
+       usual bottom of the text on that document's other pages; gaps inside a page are white
+       bands taller than about four blank lines. Runs once every page has been read. */
+    var gapsByEntry = new Map(), gapList = [];
+    var METRIC = !/^en-US$/i.test(navigator.language || "en-US");
+    var MID_GAP = 72, END_GAP = 72;
+
+    function lengthText(pts) {
+      return METRIC ? (pts / 72 * 2.54).toFixed(1) + " cm" : (pts / 72).toFixed(1) + " in";
+    }
+
+    function findGaps() {
+      var bottoms = new Map(), gaps = [];
+      board.forEach(function (e) {
+        var f = e.info;
+        if (!f || !f.white || !f.body.length) return;
+        var b = f.body[f.body.length - 1].b;
+        if (!(bottoms.get(e.item) >= b)) bottoms.set(e.item, b);
+      });
+      board.forEach(function (e, i) {
+        var f = e.info;
+        if (!f || !f.white) return;
+        if (f.blank) { gaps.push({ e: e, i: i, kind: "blank", pts: f.ptH }); return; }
+        f.body.forEach(function (g, k) {
+          var d = k ? (g.t - f.body[k - 1].b) * f.ptH : 0;
+          if (d >= MID_GAP) gaps.push({ e: e, i: i, kind: "mid", pts: d, from: f.body[k - 1].b, to: g.t });
+        });
+        var last = f.body[f.body.length - 1].b, end = bottoms.get(e.item), d2 = (end - last) * f.ptH;
+        if (i < board.length - 1 && d2 >= END_GAP) gaps.push({ e: e, i: i, kind: "end", pts: d2, from: last, to: end });
+      });
+      return gaps;
+    }
+
+    function renderGaps(ready) {
+      gapList = ready ? findGaps() : [];
+      gapsByEntry = new Map();
+      gapList.forEach(function (g) {
+        if (g.kind === "blank") return;
+        if (!gapsByEntry.has(g.e)) gapsByEntry.set(g.e, []);
+        gapsByEntry.get(g.e).push(g);
+      });
+      gapsEl.textContent = "";
+      gapsEl.hidden = !gapList.length;
+      gapList.forEach(function (g) {
+        var li = el("li"), b = el("button"); b.type = "button";
+        b.appendChild(el("b", null, "p. " + (g.i + 1)));
+        b.appendChild(el("span", null, g.kind === "blank" ? "Blank page" : g.kind === "end" ? "Page break" : "Mid-page gap"));
+        b.appendChild(el("em", null, g.kind === "blank" ? "whole page" : lengthText(g.pts)));
+        b.setAttribute("aria-label", "Show page " + (g.i + 1) + ": " + b.children[1].textContent + (g.kind === "blank" ? "" : ", " + lengthText(g.pts)));
+        b.addEventListener("click", function () { showPage(g.e); });
+        li.appendChild(b);
+        gapsEl.appendChild(li);
+      });
+    }
+
+    function showPage(e) {
+      var li = pagesEl.querySelector('[data-id="' + e.id + '"]');
+      if (!li) return;
+      li.scrollIntoView({ behavior: "smooth", block: "center" });
+      li.classList.remove("flash"); void li.offsetWidth; li.classList.add("flash");
+    }
+
+    function updateBlankNote() {
+      if (settings().mode !== "edit") return;
+      var note, blanks = [];
+      if (!items.length) note = "Add a PDF and blank pages are found automatically.";
+      else if (pjsFailed) note = "Page previews did not load, so blank pages can't be found here. You can still remove pages by hand.";
+      else {
+        var total = board.length, done = board.filter(function (e) { return e.info || e.failed; }).length;
+        if (done < total) note = "Checking for blank pages… " + done + " of " + total;
+        else {
+          board.forEach(function (e, i) { if (e.info && e.info.blank) blanks.push(i + 1); });
+          var breaks = 0, mids = 0, total2 = 0;
+          gapList.forEach(function (g) { if (g.kind === "end") breaks++; if (g.kind === "mid") mids++; if (g.kind !== "blank") total2 += g.pts; });
+          var parts = [];
+          if (blanks.length) parts.push(blanks.length === 1 ? "1 blank page" : blanks.length + " blank pages");
+          if (breaks) parts.push(breaks === 1 ? "1 page break that leaves a gap" : breaks + " page breaks that leave gaps");
+          if (mids) parts.push(mids === 1 ? "1 gap inside a page" : mids + " gaps inside pages");
+          note = !parts.length ? "No blank pages or big gaps found." :
+            "Found " + parts.join(", ").replace(/, ([^,]*)$/, " and $1") + "." +
+            (total2 ? " That is " + lengthText(total2) + " of empty space, hatched on the pages. Tap one to find it." : "") +
+            (breaks ? " In Word, look for a page break or “Page break before” just after the text on those pages." : "");
+        }
+      }
+      blankNoteEl.textContent = note;
+      blankRmBtn.hidden = !blanks.length;
+      blankRmBtn.textContent = "Remove " + (blanks.length === 1 ? "1 blank page" : blanks.length + " blank pages");
+    }
+
+    function boardChanged() {
+      edited = null;
       render();
+      schedule(300);
+      runQueue();
+    }
+
+    function pushUndo() {
+      undoStack.push(board.map(function (e) { return [e, e.rot]; }));
+      if (undoStack.length > 60) undoStack.shift();
+    }
+
+    function setSel(e, on) {
+      e.sel = on;
+      var li = pagesEl.querySelector('[data-id="' + e.id + '"]');
+      if (li) { li.classList.toggle("sel", on); li.querySelector(".pg-check").checked = on; }
+      renderBar();
+    }
+
+    function moveEntry(e, dir) {
+      var i = board.indexOf(e), j = i + dir;
+      if (i < 0 || j < 0 || j >= board.length) return;
+      pushUndo();
+      board.splice(i, 1); board.splice(j, 0, e);
+      boardChanged();
+      var li = pagesEl.querySelector('[data-id="' + e.id + '"]');
+      if (li) { var btns = li.querySelectorAll(".pg-act button"), b = btns[dir < 0 ? 0 : 3]; (b.disabled ? btns[dir < 0 ? 3 : 0] : b).focus(); }
+    }
+
+    function rotateEntries(list) {
+      if (!list.length) return;
+      pushUndo();
+      list.forEach(function (e) { e.rot = (e.rot + 90) % 360; });
+      boardChanged();
+    }
+
+    function removeEntries(list) {
+      if (!list.length) return;
+      pushUndo();
+      var i = board.indexOf(list[0]);
+      board = board.filter(function (e) { return list.indexOf(e) < 0; });
+      list.forEach(function (e) { e.sel = false; });
+      boardChanged();
+      var next = pagesEl.children[Math.min(i, pagesEl.children.length - 1)];
+      if (next && list.length === 1) { var rb = next.querySelectorAll(".pg-act button")[2]; if (rb) rb.focus(); }
+    }
+
+    function undo() {
+      var snap = undoStack.pop();
+      if (!snap) return;
+      board = snap.filter(function (p) { return items.indexOf(p[0].item) >= 0; }).map(function (p) { p[0].rot = p[1]; return p[0]; });
+      boardChanged();
+    }
+
+    async function saveSelected() {
+      var sel = board.filter(function (e) { return e.sel; });
+      if (!sel.length || !L) return;
+      var s = settings();
+      if (s.layout !== "keep" && analysisPending()) { setStatus("Still reading pages. Try again in a moment."); return; }
+      setStatus("Building…");
+      try {
+        var res = await buildEdited(sel, s, function () { return false; });
+        var first = sel[0].item;
+        var same = sel.every(function (e) { return e.item === first; });
+        await SW.save((same ? baseName(first.name) : "shrinkwrap") + "-pages.pdf", res.blob, setStatus);
+      } catch (e) {
+        setStatus("Could not build the PDF. " + (e.message || e), true);
+      }
+    }
+
+    function editedName() {
+      return items.length === 1 ? baseName(items[0].name) + "-edited.pdf" : "shrinkwrap-edited.pdf";
+    }
+
+    /* Drag to reorder. Mouse and pen drag after a small move; touch drags after a short hold,
+       so a normal swipe still scrolls the page. Cards move live while dragging. */
+    var drag = null;
+    pagesEl.addEventListener("pointerdown", function (ev) {
+      if (ev.button !== 0 || ev.target.closest("button, input")) return;
+      var li = ev.target.closest(".pg");
+      if (!li) return;
+      drag = { li: li, x: ev.clientX, y: ev.clientY, id: ev.pointerId, touch: ev.pointerType === "touch", active: false, moved: false, timer: null };
+      if (drag.touch) drag.timer = setTimeout(function () { if (drag && !drag.moved) startDrag(); }, 280);
+    });
+    function startDrag() {
+      drag.active = true; dragging = true;
+      drag.li.classList.add("dragging");
+      try { drag.li.setPointerCapture(drag.id); } catch (e) {}
+    }
+    window.addEventListener("pointermove", function (ev) {
+      if (!drag || ev.pointerId !== drag.id) return;
+      if (!drag.active) {
+        var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+        if (dx * dx + dy * dy < 49) return;
+        drag.moved = true;
+        if (drag.touch) { clearTimeout(drag.timer); drag = null; return; }
+        startDrag();
+      }
+      ev.preventDefault();
+      var over = document.elementFromPoint(ev.clientX, ev.clientY), target = over && over.closest(".pg");
+      if (target && target !== drag.li && target.parentNode === pagesEl) {
+        var r = target.getBoundingClientRect();
+        var after = ev.clientY > r.bottom ? true : ev.clientY < r.top ? false : ev.clientX > r.left + r.width / 2;
+        pagesEl.insertBefore(drag.li, after ? target.nextSibling : target);
+      }
+      if (ev.clientY < 50) window.scrollBy(0, -14);
+      else if (ev.clientY > window.innerHeight - 50) window.scrollBy(0, 14);
+    }, { passive: false });
+    function endDrag(ev) {
+      if (!drag || ev.pointerId !== drag.id) return;
+      clearTimeout(drag.timer);
+      var d = drag; drag = null;
+      if (d.active) {
+        dragging = false;
+        d.li.classList.remove("dragging");
+        var byId = {};
+        board.forEach(function (e) { byId[e.id] = e; });
+        var order = Array.prototype.map.call(pagesEl.children, function (li) { return byId[li.getAttribute("data-id")]; });
+        if (order.some(function (e, k) { return e !== board[k]; })) { pushUndo(); board = order; boardChanged(); }
+        else renderBoard();
+      } else if (ev.type === "pointerup" && !d.moved) {
+        var e = board.filter(function (x) { return String(x.id) === d.li.getAttribute("data-id"); })[0];
+        if (e) setSel(e, !e.sel);
+      }
+    }
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    pagesEl.addEventListener("touchmove", function (ev) { if (drag && drag.active) ev.preventDefault(); }, { passive: false });
+    pagesEl.addEventListener("contextmenu", function (ev) { if (drag) ev.preventDefault(); });
+
+    selAllBtn.addEventListener("click", function () {
+      var all = board.length && board.every(function (e) { return e.sel; });
+      board.forEach(function (e) { e.sel = !all; });
+      renderBoard();
+    });
+    selRotBtn.addEventListener("click", function () { rotateEntries(board.filter(function (e) { return e.sel; })); });
+    selRmBtn.addEventListener("click", function () { removeEntries(board.filter(function (e) { return e.sel; })); });
+    selSaveBtn.addEventListener("click", saveSelected);
+    undoBtn.addEventListener("click", undo);
+    blankRmBtn.addEventListener("click", function () {
+      removeEntries(board.filter(function (e) { return e.info && e.info.blank; }));
+      setStatus("Removed the blank pages. Undo brings them back.");
+    });
+
+    function removeItem(id) {
+      items = items.filter(function (it) {
+        if (it.id !== id) return true;
+        disposeItem(it);
+        return false;
+      });
+      board = board.filter(function (e) { return items.indexOf(e.item) >= 0; });
+      var mode = settings().mode;
+      if (mode === "merge") merged = null;
+      if (mode === "merge" || mode === "edit") { edited = null; schedule(60); }
+      render();
+    }
+
+    function disposeItem(it) {
+      board.forEach(function (e) { if (e.item === it) disposeEntry(e); });
+      undoStack.forEach(function (snap) { snap.forEach(function (p) { if (p[0].item === it) disposeEntry(p[0]); }); });
+      if (it.pjs) { it.pjs.then(function (d) { d.destroy(); }, function () {}); it.pjs = null; }
     }
 
     async function addFiles(files, isSample) {
       var list = Array.prototype.slice.call(files).filter(function (f) { return f.type === "application/pdf" || /\.pdf$/i.test(f.name); });
       if (!list.length) { setStatus("Those files are not PDFs.", true); return; }
       try { L = await loadLib(); } catch (e) { setStatus("The PDF library did not load. Check your connection and reload the page.", true); return; }
-      if (!isSample) items = items.filter(function (it) { return !it.sample; });
+      if (!isSample) {
+        items = items.filter(function (it) { if (it.sample) { disposeItem(it); return false; } return true; });
+        board = board.filter(function (e) { return items.indexOf(e.item) >= 0; });
+        undoStack = [];
+      }
       setStatus("Reading…");
       var problems = [];
       for (var i = 0; i < list.length; i++) {
@@ -1230,7 +1990,9 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         try {
           var bytes = new Uint8Array(await f.arrayBuffer());
           var doc = await L.PDFDocument.load(bytes, { updateMetadata: false });
-          items.push({ id: nextId++, name: f.name || "document.pdf", size: f.size, bytes: bytes, doc: doc, pages: doc.getPageCount(), sample: !!isSample });
+          var it = { id: nextId++, name: f.name || "document.pdf", size: f.size, bytes: bytes, doc: doc, pages: doc.getPageCount(), sample: !!isSample, pjs: null };
+          items.push(it);
+          for (var pi = 0; pi < it.pages; pi++) board.push({ id: nextPg++, item: it, index: pi, rot: 0, sel: false, info: null, thumb: null, failed: false });
         } catch (e) {
           problems.push(/encrypt/i.test(String(e && e.message)) ? f.name + " is password-protected. Unlock it first, then add it again." : "Could not read " + f.name + ". It may be damaged or not a PDF.");
         }
@@ -1238,7 +2000,9 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       }
       setStatus(problems.join(" "), problems.length > 0);
       if (settings().mode === "merge") merged = null;
+      edited = null;
       schedule(0);
+      runQueue();
     }
 
     /* Example PDFs are generated here so the tab opens with something to try. */
@@ -1306,9 +2070,31 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         var sImg = await scan.embedJpg(scans[sI]);
         scan.addPage([612, 792]).drawImage(sImg, { x: 0, y: 0, width: 612, height: 792 });
       }
+      /* Like a Word export gone wrong: page breaks leave half-empty pages and a blank one. */
+      var word = await L.PDFDocument.create(), grey = L.rgb(0.4, 0.43, 0.48);
+      var wFont = await word.embedFont(L.StandardFonts.Helvetica), wBold = await word.embedFont(L.StandardFonts.HelveticaBold);
+      var wordPages = [
+        [["Quarterly summary", 0], [para, 1], [para, 1]],
+        [["1. Results", 0], [para, 1]],
+        [],
+        [["2. Next steps", 0], [para, 1], [para, 1], [para, 1], [para, 1]],
+        [[para, 1], ["", 260], ["Table 1. Totals by region", 0], [para, 1]]
+      ];
+      wordPages.forEach(function (blocks, k) {
+        var pg = word.addPage([612, 792]), yy = 704;
+        pg.drawText("Shrinkwrap example", { x: 72, y: 748, size: 9, font: wFont, color: grey });
+        blocks.forEach(function (b) {
+          if (b[0] === "") { yy -= b[1]; return; }
+          if (!b[1]) { pg.drawText(b[0], { x: 72, y: yy, size: 15, font: wBold, color: ink }); yy -= 26; return; }
+          wrapText(b[0], 11, 468).forEach(function (ln) { pg.drawText(ln, { x: 72, y: yy, size: 11, font: wFont, color: ink }); yy -= 15; });
+          yy -= 10;
+        });
+        pg.drawText(String(k + 1), { x: 303, y: 40, size: 9, font: wFont, color: grey });
+      });
       return [
         new File([await report.save()], "example-report.pdf", { type: "application/pdf" }),
-        new File([await scan.save()], "example-scan.pdf", { type: "application/pdf" })
+        new File([await scan.save()], "example-scan.pdf", { type: "application/pdf" }),
+        new File([await word.save()], "example-word-export.pdf", { type: "application/pdf" })
       ];
     }
 
@@ -1317,11 +2103,29 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       Array.prototype.forEach.call(document.querySelectorAll("[data-pmode]"), function (g) { g.hidden = g.getAttribute("data-pmode") !== s.mode; });
       rangesField.hidden = s.split !== "ranges";
       qvalEl.textContent = qualityEl.value + "%";
+      Array.prototype.forEach.call(layoutEl.options, function (o) { o.disabled = pjsFailed && o.value !== "keep"; });
+      if (pjsFailed) layoutEl.value = "keep";
+      layoutHintEl.textContent = LAYOUT_HINTS[layoutEl.value];
+      hfRow.hidden = layoutEl.value !== "gaps";
+      numOpts.hidden = !numEl.checked;
     }
 
+    var LAYOUT_HINTS = {
+      keep: "Pages are saved with their own size and margins.",
+      trim: "Crops each page to its content plus a small border, so wide white margins and half-empty pages shrink. Pages may end up different sizes.",
+      gaps: "Pulls half-empty pages together so the content fills whole pages, and drops blank pages. Text stays sharp and selectable, but links are lost. A gap in the middle of a page stays, and lines are never re-wrapped: a PDF has no paragraphs to re-flow, so for a perfect result remove the extra page breaks in Word and export again."
+    };
+
     Array.prototype.forEach.call(document.querySelectorAll('input[name="pmode"], input[name="psplit"]'), function (r) {
-      r.addEventListener("change", function () { syncModeUi(); render(); schedule(0); });
+      r.addEventListener("change", function () { syncModeUi(); render(); schedule(0); runQueue(); });
     });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="pnfmt"]'), function (r) {
+      r.addEventListener("change", function () { schedule(0); });
+    });
+    [layoutEl, hfEl, numEl, numPosEl, numSkipEl].forEach(function (c) {
+      c.addEventListener("change", function () { syncModeUi(); edited = null; render(); schedule(0); });
+    });
+    numStartEl.addEventListener("input", function () { schedule(400); });
     qualityEl.addEventListener("input", function () { syncModeUi(); schedule(350); });
     maxEdgeEl.addEventListener("change", function () { schedule(0); });
     stripEl.addEventListener("change", function () { schedule(0); });
@@ -1330,13 +2134,18 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     SW.wireDrop(dropEl, fileEl, function (files) { addFiles(files); });
 
     clearBtn.addEventListener("click", function () {
-      items = []; merged = null; runToken++; setStatus(""); render();
+      items.forEach(disposeItem);
+      items = []; board = []; undoStack = []; merged = null; edited = null; runToken++; setStatus(""); render();
     });
 
     saveBtn.addEventListener("click", function () {
       var s = settings(), key = settingsKey(s);
       if (s.mode === "merge") {
         if (merged) SW.save("shrinkwrap-merged.pdf", merged.blob, setStatus);
+        return;
+      }
+      if (s.mode === "edit") {
+        if (edited) SW.save(editedName(), edited.blob, setStatus);
         return;
       }
       var entries = [];
