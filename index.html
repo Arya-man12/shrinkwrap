@@ -474,8 +474,24 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   "use strict";
 
   /* ---------- Shared helpers (both tools) ---------- */
+  /* Plain browser download, used when the Claude viewer's download API is not available. */
+  var anchorDownloads = {
+    save: async function (opts) {
+      var blob = opts.data instanceof Blob ? opts.data : new Blob([opts.data]);
+      var url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = url;
+      a.download = opts.filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      return { status: "saved" };
+    }
+  };
+
   var SW = {
-    downloads: null,
+    downloads: (window.claude && window.claude.use) ? null : anchorDownloads,
     readyHandlers: [],
     formatBytes: function (n) {
       if (n < 1024) return n + " B";
@@ -505,7 +521,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       };
     },
     save: async function (filename, data, setStatus) {
-      if (!SW.downloads) { setStatus("Saving files works inside the Claude viewer.", true); return; }
+      if (!SW.downloads) { setStatus("Saving files is not available here.", true); return; }
       try {
         var r = await SW.downloads.save({ filename: filename, data: data });
         if (r && r.status) setStatus("Saved " + filename);
