@@ -601,7 +601,12 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   };
 
   var SW = {
-    downloads: (window.claude && window.claude.use) ? null : anchorDownloads,
+    /* Resolves to the viewer's download API, the plain browser download outside the viewer,
+       or null when this view of the viewer cannot save. Buttons stay clickable either way so a
+       click always ends in a save or a message, never a silently greyed-out button. */
+    downloads: (window.claude && window.claude.use)
+      ? Promise.resolve().then(function () { return window.claude.use("downloads"); }).catch(function () { return null; })
+      : Promise.resolve(anchorDownloads),
     readyHandlers: [],
     formatBytes: function (n) {
       if (n < 1024) return n + " B";
@@ -631,13 +636,23 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       };
     },
     save: async function (filename, data, setStatus) {
-      if (!SW.downloads) { setStatus("Saving files is not available here.", true); return; }
+      var downloads = await SW.downloads;
+      if (!downloads) { setStatus("This view can't save files. Open the page in a web browser to save.", true); return; }
       try {
-        var r = await SW.downloads.save({ filename: filename, data: data });
+        var r = await downloads.save({ filename: filename, data: data });
         if (r && r.status) setStatus("Saved " + filename);
       } catch (e) {
         if (e && e.code === "declined") { setStatus(""); return; }
         if (e && e.code === "rate_limited") { setStatus("A save prompt is already open. Answer it, then try again.", true); return; }
+        if (e && e.code === "rejected_extension") {
+          var dot = filename.lastIndexOf(".");
+          setStatus("The Claude viewer can't save " + (dot > 0 ? filename.slice(dot) + " files" : "files without an extension") + " on their own. Use Save all as ZIP instead.", true);
+          return;
+        }
+        if (e && (e.code === "unavailable" || e.code === "not_granted" || e.code === "capability_disabled" || e.code === "capability_removed")) {
+          setStatus("Saving is turned off in this view. Open the page in a web browser to save.", true);
+          return;
+        }
         setStatus("Could not save " + filename + ".", true);
       }
     },
@@ -795,7 +810,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         var act = document.createElement("div"); act.className = "act";
         var b = document.createElement("button");
         b.type = "button"; b.textContent = "Save";
-        b.disabled = !it.out || !SW.downloads;
+        b.disabled = !it.out;
         b.addEventListener("click", function () { SW.save(outName(it), it.out.blob, setStatus); });
         act.appendChild(b);
         var rm = document.createElement("button");
@@ -814,7 +829,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         totalsEl.appendChild(document.createTextNode(done + (done === 1 ? " file  |  " : " files  |  ") + formatBytes(origTotal) + " → " + formatBytes(outTotal) + "  "));
         totalsEl.appendChild(SW.deltaSpan(origTotal, outTotal, "b"));
       }
-      zipBtn.disabled = !done || !SW.downloads || typeof JSZip === "undefined";
+      zipBtn.disabled = !done;
       clearBtn.disabled = !items.length;
     }
 
@@ -1528,7 +1543,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
           act.appendChild(up); act.appendChild(dn);
         } else if (s.mode === "compress") {
           var sv = el("button", null, "Save"); sv.type = "button";
-          sv.disabled = !(it.out && it.outKey === settingsKey(s)) || !SW.downloads;
+          sv.disabled = !(it.out && it.outKey === settingsKey(s));
           sv.addEventListener("click", function () { SW.save(outName(it), it.out.blob, setStatus); });
           act.appendChild(sv);
         }
@@ -1546,7 +1561,6 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
             label.appendChild(el("em", null, pagesLabel(p.pages) + ", " + formatBytes(p.blob.size)));
             pl.appendChild(label);
             var b = el("button", null, "Save"); b.type = "button";
-            b.disabled = !SW.downloads;
             b.addEventListener("click", function () { SW.save(p.name, p.blob, setStatus); });
             pl.appendChild(b);
             ul.appendChild(pl);
@@ -1592,13 +1606,13 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
 
       if (s.mode === "merge") {
         saveBtn.textContent = "Save merged PDF";
-        saveBtn.disabled = !merged || !SW.downloads;
+        saveBtn.disabled = !merged;
       } else if (s.mode === "edit") {
         saveBtn.textContent = "Save PDF";
-        saveBtn.disabled = !edited || !SW.downloads;
+        saveBtn.disabled = !edited;
       } else {
         saveBtn.textContent = "Save all as ZIP";
-        saveBtn.disabled = !done || !SW.downloads || typeof JSZip === "undefined";
+        saveBtn.disabled = !done;
       }
       clearBtn.disabled = !items.length;
       renderBoard();
@@ -1689,7 +1703,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       selAllBtn.textContent = sel && sel === board.length ? "Select none" : "Select all";
       selAllBtn.disabled = !board.length;
       selRotBtn.disabled = selRmBtn.disabled = !sel;
-      selSaveBtn.disabled = !sel || !SW.downloads;
+      selSaveBtn.disabled = !sel;
       selSaveBtn.textContent = sel ? "Save " + sel + " selected" : "Save selected";
       undoBtn.disabled = !undoStack.length;
     }
@@ -2575,7 +2589,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
 
         var act = el("div", "act");
         var sv = el("button", null, "Save"); sv.type = "button";
-        sv.disabled = !(current && it.out) || !SW.downloads;
+        sv.disabled = !(current && it.out);
         sv.addEventListener("click", function () { SW.save(it.out.name, it.out.blob, setStatus); });
         act.appendChild(sv);
         var rm = el("button", null, "Remove"); rm.type = "button";
@@ -2604,7 +2618,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       } else if (skipped === items.length) {
         totalsEl.textContent = "Nothing to convert with this action.";
       }
-      saveBtn.disabled = !done || !SW.downloads || typeof JSZip === "undefined";
+      saveBtn.disabled = !done;
       clearBtn.disabled = !items.length;
     }
 
@@ -2762,10 +2776,5 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
   var saved = null;
   try { saved = localStorage.getItem("shrinkwrap-tool"); } catch (e) {}
   if (saved === "pdf" || saved === "text") setTool(saved);
-  try {
-    if (window.claude && window.claude.use) {
-      window.claude.use("downloads").then(function (d) { SW.downloads = d; imageTool.render(); pdfTool.render(); textTool.render(); }, function () {});
-    }
-  } catch (e) {}
 })();
 </script>
