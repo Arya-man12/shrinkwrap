@@ -192,7 +192,19 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
 .pg.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
 .pg.dragging { opacity: 0.55; cursor: grabbing; outline: 2px dashed var(--accent); outline-offset: 2px; }
 .pg-frame { position: relative; aspect-ratio: 1; display: grid; place-items: center; background: var(--sunken); border-radius: var(--r-sm); overflow: hidden; }
-.pg-frame img { position: absolute; inset: 0; margin: auto; display: block; max-width: calc(100% - 14px); max-height: calc(100% - 14px); background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(17 21 27 / 0.12); transition: transform 160ms; pointer-events: none; }
+/* The sheet is the page preview at its own aspect ratio; gap marks sit on it and turn with it. */
+.pg-sheet { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(17 21 27 / 0.12); transition: transform 160ms; pointer-events: none; }
+.pg-sheet.tall { height: calc(100% - 14px); }
+.pg-sheet.wide { width: calc(100% - 14px); }
+.pg-sheet img { display: block; width: 100%; height: 100%; }
+.pg-gap { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(135deg, rgb(169 78 20 / 0.20) 0 4px, rgb(169 78 20 / 0.08) 4px 8px); border-block: 1px dashed rgb(169 78 20 / 0.7); }
+.pg.flash { animation: pg-flash 1.4s ease-out; }
+@keyframes pg-flash { 0%, 40% { box-shadow: 0 0 0 3px var(--warn); border-color: var(--warn); } }
+.gaps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.gaps button { width: 100%; min-height: 34px; display: grid; grid-template-columns: 6ch minmax(0, 1fr) auto; gap: var(--s2); align-items: center; text-align: left; padding: 4px 10px; font-family: var(--font-data); font-size: var(--fs-small); font-weight: 400; font-variant-numeric: tabular-nums; }
+.gaps b { font-weight: 500; white-space: nowrap; }
+.gaps span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gaps em { font-style: normal; color: var(--warn); white-space: nowrap; }
 .pg-ph { font-family: var(--font-data); font-size: var(--fs-small); color: var(--muted); }
 .pg-check { position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .pg-badge { position: absolute; top: 6px; right: 6px; font-family: var(--font-data); font-size: 10.5px; font-weight: 500; letter-spacing: 0.04em; line-height: 1.6; padding: 0 6px; border-radius: 999px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); }
@@ -322,9 +334,10 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         <p class="hint">Every page of every PDF in the list, on one board. Drag pages to reorder them, or use the buttons under each page. Everything saves as one PDF; tick pages to save just those.</p>
 
         <fieldset>
-          <legend>Blank pages</legend>
+          <legend>Gaps and blank pages</legend>
           <p class="hint" id="p-blank-note" aria-live="polite"></p>
           <button type="button" id="p-blank-rm" hidden></button>
+          <ul class="gaps" id="p-gaps" aria-label="Gaps, in page order" hidden></ul>
         </fieldset>
 
         <div class="field">
@@ -915,7 +928,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     var rangesEl = $("p-ranges"), rangesField = $("p-ranges-field");
     var boardEl = $("p-board"), pagesEl = $("p-pages"), boardCountEl = $("p-board-count");
     var selAllBtn = $("p-sel-all"), selRotBtn = $("p-sel-rot"), selRmBtn = $("p-sel-rm"), selSaveBtn = $("p-sel-save"), undoBtn = $("p-undo");
-    var blankNoteEl = $("p-blank-note"), blankRmBtn = $("p-blank-rm");
+    var blankNoteEl = $("p-blank-note"), blankRmBtn = $("p-blank-rm"), gapsEl = $("p-gaps");
     var layoutEl = $("p-layout"), layoutHintEl = $("p-layout-hint"), hfRow = $("p-hf-row"), hfEl = $("p-hf");
     var numEl = $("p-num"), numOpts = $("p-num-opts"), numPosEl = $("p-num-pos"), numStartEl = $("p-num-start"), numSkipEl = $("p-num-skip");
     var formatBytes = SW.formatBytes, baseName = SW.baseName, el = SW.el;
@@ -1163,8 +1176,10 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       }
       groups.forEach(function (g) { g.hf = g.b <= h * EDGE_BAND ? "h" : g.t >= h * (1 - EDGE_BAND) ? "f" : null; });
       var body = groups.filter(function (g) { return !g.hf; });
-      var info = { blank: !body.length, sparse: false, bbox: null, bands: null };
-      if (body.length) info.sparse = (body[body.length - 1].b - body[0].t) / h < 0.22;
+      var info = {
+        blank: !body.length, bbox: null, bands: null, w: w, h: h, ptH: h / vp.scale, white: bg >= 248,
+        body: body.map(function (g) { return { t: g.t / h, b: g.b / h }; })
+      };
       if (groups.length) {
         var x0 = 0, x1 = w - 1;
         while (x0 < w - 1 && cols[x0] < minCol) x0++;
@@ -1626,9 +1641,17 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       var src = (items.length > 1 ? e.item.name + ", " : "") + "page " + (e.index + 1);
       var fr = el("div", "pg-frame");
       if (e.thumb) {
+        var sheet = el("div", "pg-sheet " + (e.info.w >= e.info.h ? "wide" : "tall"));
+        sheet.style.aspectRatio = e.info.w + " / " + e.info.h;
+        if (e.rot) sheet.style.transform = "translate(-50%, -50%) rotate(" + e.rot + "deg)";
         var im = el("img"); im.alt = ""; im.draggable = false; im.src = e.thumb;
-        if (e.rot) im.style.transform = "rotate(" + e.rot + "deg)";
-        fr.appendChild(im);
+        sheet.appendChild(im);
+        (gapsByEntry.get(e) || []).forEach(function (g) {
+          var mark = el("span", "pg-gap");
+          mark.style.top = (g.from * 100) + "%"; mark.style.height = ((g.to - g.from) * 100) + "%";
+          sheet.appendChild(mark);
+        });
+        fr.appendChild(sheet);
       } else {
         fr.appendChild(el("span", "pg-ph", e.failed || pjsFailed ? "p. " + (e.index + 1) : "Loading…"));
       }
@@ -1637,7 +1660,6 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       cb.addEventListener("change", function () { setSel(e, cb.checked); });
       fr.appendChild(cb);
       if (e.info && e.info.blank) fr.appendChild(el("span", "pg-badge warn", "Blank"));
-      else if (e.info && e.info.sparse) fr.appendChild(el("span", "pg-badge", "Mostly empty"));
       li.appendChild(fr);
 
       var cap = el("div", "pg-cap");
@@ -1675,6 +1697,7 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
     function renderBoard() {
       var on = settings().mode === "edit" && items.length > 0;
       boardEl.hidden = !on;
+      if (on && !dragging) renderGaps(!analysisPending() && !pjsFailed);
       updateBlankNote();
       if (!on || dragging) return;
       var keep = document.activeElement && pagesEl.contains(document.activeElement) ? document.activeElement.getAttribute("aria-label") : null;
@@ -1699,6 +1722,68 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
       if (focused) { var f = fresh.querySelector('[aria-label="' + focused + '"]'); if (f) f.focus(); }
     }
 
+    /* Gap finder. A page break shows up as white space between a page's last line and the
+       usual bottom of the text on that document's other pages; gaps inside a page are white
+       bands taller than about four blank lines. Runs once every page has been read. */
+    var gapsByEntry = new Map(), gapList = [];
+    var METRIC = !/^en-US$/i.test(navigator.language || "en-US");
+    var MID_GAP = 72, END_GAP = 72;
+
+    function lengthText(pts) {
+      return METRIC ? (pts / 72 * 2.54).toFixed(1) + " cm" : (pts / 72).toFixed(1) + " in";
+    }
+
+    function findGaps() {
+      var bottoms = new Map(), gaps = [];
+      board.forEach(function (e) {
+        var f = e.info;
+        if (!f || !f.white || !f.body.length) return;
+        var b = f.body[f.body.length - 1].b;
+        if (!(bottoms.get(e.item) >= b)) bottoms.set(e.item, b);
+      });
+      board.forEach(function (e, i) {
+        var f = e.info;
+        if (!f || !f.white) return;
+        if (f.blank) { gaps.push({ e: e, i: i, kind: "blank", pts: f.ptH }); return; }
+        f.body.forEach(function (g, k) {
+          var d = k ? (g.t - f.body[k - 1].b) * f.ptH : 0;
+          if (d >= MID_GAP) gaps.push({ e: e, i: i, kind: "mid", pts: d, from: f.body[k - 1].b, to: g.t });
+        });
+        var last = f.body[f.body.length - 1].b, end = bottoms.get(e.item), d2 = (end - last) * f.ptH;
+        if (i < board.length - 1 && d2 >= END_GAP) gaps.push({ e: e, i: i, kind: "end", pts: d2, from: last, to: end });
+      });
+      return gaps;
+    }
+
+    function renderGaps(ready) {
+      gapList = ready ? findGaps() : [];
+      gapsByEntry = new Map();
+      gapList.forEach(function (g) {
+        if (g.kind === "blank") return;
+        if (!gapsByEntry.has(g.e)) gapsByEntry.set(g.e, []);
+        gapsByEntry.get(g.e).push(g);
+      });
+      gapsEl.textContent = "";
+      gapsEl.hidden = !gapList.length;
+      gapList.forEach(function (g) {
+        var li = el("li"), b = el("button"); b.type = "button";
+        b.appendChild(el("b", null, "p. " + (g.i + 1)));
+        b.appendChild(el("span", null, g.kind === "blank" ? "Blank page" : g.kind === "end" ? "Page break" : "Mid-page gap"));
+        b.appendChild(el("em", null, g.kind === "blank" ? "whole page" : lengthText(g.pts)));
+        b.setAttribute("aria-label", "Show page " + (g.i + 1) + ": " + b.children[1].textContent + (g.kind === "blank" ? "" : ", " + lengthText(g.pts)));
+        b.addEventListener("click", function () { showPage(g.e); });
+        li.appendChild(b);
+        gapsEl.appendChild(li);
+      });
+    }
+
+    function showPage(e) {
+      var li = pagesEl.querySelector('[data-id="' + e.id + '"]');
+      if (!li) return;
+      li.scrollIntoView({ behavior: "smooth", block: "center" });
+      li.classList.remove("flash"); void li.offsetWidth; li.classList.add("flash");
+    }
+
     function updateBlankNote() {
       if (settings().mode !== "edit") return;
       var note, blanks = [];
@@ -1708,12 +1793,17 @@ button.icon { padding: 0; width: var(--ctl); font-family: var(--font-data); }
         var total = board.length, done = board.filter(function (e) { return e.info || e.failed; }).length;
         if (done < total) note = "Checking for blank pages… " + done + " of " + total;
         else {
-          var sparse = 0;
-          board.forEach(function (e, i) { if (e.info && e.info.blank) blanks.push(i + 1); else if (e.info && e.info.sparse) sparse++; });
-          var list = blanks.slice(0, 8).join(", ") + (blanks.length > 8 ? " and " + (blanks.length - 8) + " more" : "");
-          note = !blanks.length ? "No blank pages found." :
-            "Found " + (blanks.length === 1 ? "1 blank page: page " : blanks.length + " blank pages: ") + list + ". They are marked Blank on the board.";
-          if (sparse) note += " " + (sparse === 1 ? "1 page is" : sparse + " pages are") + " mostly empty, usually a gap from a page break; Close up big gaps packs them together.";
+          board.forEach(function (e, i) { if (e.info && e.info.blank) blanks.push(i + 1); });
+          var breaks = 0, mids = 0, total2 = 0;
+          gapList.forEach(function (g) { if (g.kind === "end") breaks++; if (g.kind === "mid") mids++; if (g.kind !== "blank") total2 += g.pts; });
+          var parts = [];
+          if (blanks.length) parts.push(blanks.length === 1 ? "1 blank page" : blanks.length + " blank pages");
+          if (breaks) parts.push(breaks === 1 ? "1 page break that leaves a gap" : breaks + " page breaks that leave gaps");
+          if (mids) parts.push(mids === 1 ? "1 gap inside a page" : mids + " gaps inside pages");
+          note = !parts.length ? "No blank pages or big gaps found." :
+            "Found " + parts.join(", ").replace(/, ([^,]*)$/, " and $1") + "." +
+            (total2 ? " That is " + lengthText(total2) + " of empty space, hatched on the pages. Tap one to find it." : "") +
+            (breaks ? " In Word, look for a page break or “Page break before” just after the text on those pages." : "");
         }
       }
       blankNoteEl.textContent = note;
